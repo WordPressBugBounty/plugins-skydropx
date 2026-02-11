@@ -3,7 +3,7 @@ Contributors: Skydropx
 Donate link: https://skydropx.com
 Tags: WooCommerce, Shipping Method, Skydropx
 Requires at least: 3.0.1
-Tested up to: 6.7.0
+Tested up to: 6.9
 Stable tag: 1.1.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -20,7 +20,7 @@ Skydropx: cotizador y envíos Con esta versión de Skydropx podrás aprovechar m
 * Obtén ganancias extra de tus envíos y ofrece descuentos a tus clientes.
 
 ¡Deja de preocuparte por la logística de envío de tu negocio, utilizando una herramienta gratuita!
-Si necesitas información adicional o tienes alguna duda podes consultar el 
+Si necesitas información adicional o tienes alguna duda podes consultar el
 [manual](https://ayuda.skydropx.com/knowledge-base/conectar-y-configurar-mi-tienda-woocommerce-con-skydropx-cotizador-y-envios/) o no dudes en contactarnos a través de [integraciones@skydropx.com](mailto:integraciones@skydropx.com)
 Estaremos felices de ayudarte.
 
@@ -58,7 +58,7 @@ Para instalar el plugin desde el repositorio, sigue estos pasos:
 * Selecciona el botón Instalar que corresponda al plugin de Skydropx.
 
 Para instalar el módulo desde el archivo .ZIP, sigue estos pasos:
-	
+
 * Ve al menú de administración y allí selecciona Plugins > Agregar nuevo.
 * En la parte superior de la pantalla selecciona el botón Subir plugin.
 * Selecciona el archivo .zip guardado previamente en tu computadora y selecciona el botón Instalar ahora.
@@ -128,6 +128,6 @@ Se recomienda revisar estas notificaciones y el apartado del menú Skydropx para
 
 = 1.0.0 =
 * add shipping zone by @xavier-arias-skydropx in #3
-* modify logging and post request on deactivate action/event 
-* add latest plugin changes 
+* modify logging and post request on deactivate action/event
+* add latest plugin changes
 * modify redirection after activation
