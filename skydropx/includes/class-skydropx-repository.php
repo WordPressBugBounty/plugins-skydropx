@@ -1,170 +1,203 @@
 <?php
+/**
+ * Repository for plugin data operations.
+ *
+ * Handles WooCommerce API keys CRUD and cleanup of related webhooks.
+ *
+ * @package   Skydropx
+ * @subpackage Skydropx/includes
+ * @since     1.0.0
+ */
 
 namespace Skydropx\Includes;
 
-if (! defined('ABSPATH')) {
-    exit; // Exit if accessed directly.
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
 }
 
 use Skydropx\Helper\Helper;
 
-class Skydropx_Repository
-{
-    /**
-     * Create WooCommerce API keys for the current user.
-     *
-     * @return array|WP_Error [consumer_key, consumer_secret] or WP_Error on failure.
-     */
-    public function create_wc_api_keys()
-    {
-        global $wpdb;
+/**
+ * Data access layer for API keys and webhooks.
+ */
+class Skydropx_Repository {
 
-        $user = wp_get_current_user();
-        if (!$user || empty($user->ID)) {
-            return new WP_Error('invalid_user', __('Invalid user', 'skydropx'));
-        }
 
-        // Generate API keys.
-        $consumer_key = 'ck_' . wc_rand_hash();
-        $consumer_secret = 'cs_' . wc_rand_hash();
-        $hashed_key = wc_api_hash($consumer_key);
+	/**
+	 * Retrieve WooCommerce API key row by hashed consumer key.
+	 *
+	 * Always restricts to keys created by this plugin (description LIKE '%Skydropx%').
+	 *
+	 * @since 1.0.0
+	 * @param string $hashed_key          Hashed consumer key (wc_api_hash(ck)).
+	 * @param array  $allowed_permissions Optional list of allowed permissions to filter.
+	 * @return array|null                 Array with 'permissions' and 'consumer_secret' or null.
+	 */
+	public function get_api_key_by_hashed_key( $hashed_key, $allowed_permissions = array() ) {
+		global $wpdb;
 
-        $data = [
-            'user_id' => $user->ID,
-            'description' => 'Skydropx',
-            'permissions' => 'read_write',
-            'consumer_key' => $hashed_key,
-            'consumer_secret' => $consumer_secret,
-            'truncated_key' => substr($consumer_key, -7),
-        ];
+		if ( empty( $hashed_key ) ) {
+			return null;
+		}
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-        $result = $wpdb->insert("{$wpdb->prefix}woocommerce_api_keys", $data, ['%d', '%s', '%s', '%s', '%s', '%s']);
-        if ($result === false) {
-            return new WP_Error('db_insert_error', __('Could not create the API key.', 'skydropx'));
-        }
+		$table  = $wpdb->prefix . 'woocommerce_api_keys';
+		$where  = 'consumer_key = %s';
+		$params = array( $hashed_key );
 
-        return [$consumer_key, $consumer_secret];
-    }
+		if ( is_array( $allowed_permissions ) && ! empty( $allowed_permissions ) ) {
+			$placeholders = implode( ',', array_fill( 0, count( $allowed_permissions ), '%s' ) );
+			$where       .= " AND permissions IN ( {$placeholders} )";
+			$params       = array_merge( $params, array_values( $allowed_permissions ) );
+		}
 
-    /**
-     * Fetch API keys created by Skydropx for a given user ID.
-     *
-     * @param int $user_id The WordPress user ID.
-     * @return array|null Array of API keys or null if not found.
-     */
-    public function fetch_api_keys_by_user($user_id)
-    {
-        global $wpdb;
+		$where   .= ' AND description LIKE %s';
+		$params[] = '%' . $wpdb->esc_like( 'Skydropx' ) . '%';
 
-        // Add a wildcard to the description search
-        $like_condition = '%' . $wpdb->esc_like('Skydropx') . '%';
+		$query = "SELECT permissions, consumer_secret FROM {$table} WHERE {$where} LIMIT 1";
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-        return $wpdb->get_row(
-            $wpdb->prepare(
-                "SELECT consumer_key, consumer_secret
-                FROM {$wpdb->prefix}woocommerce_api_keys
-                WHERE user_id = %d AND description LIKE %s
-                LIMIT 1",
-                $user_id,
-                $like_condition
-            ),
-            ARRAY_A
-        );
-    }
+		$row = $wpdb->get_row( $wpdb->prepare( $query, $params ), ARRAY_A );
+		return is_array( $row ) ? $row : null;
+	}
 
-    /**
-     * Validate WooCommerce API keys against the database.
-     *
-     * @param string $consumer_key The consumer key to validate.
-     * @return bool True if valid, false otherwise.
-     */
-    public function validate_api_key($consumer_key)
-    {
-        global $wpdb;
+	/**
+	 * Fetch API keys created by Skydropx for a given user ID.
+	 *
+	 * @since 1.0.0
+	 * @param int $user_id The WordPress user ID.
+	 * @return array|null Array of API keys or null if not found.
+	 */
+	public function fetch_api_keys_by_user( $user_id ) {
+		global $wpdb;
 
-        $hashed_key = wc_api_hash($consumer_key);
+		// Add a wildcard to the description search.
+		$like_condition = '%' . $wpdb->esc_like( 'Skydropx' ) . '%';
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-        return (int) $wpdb->get_var(
-            $wpdb->prepare(
-                "SELECT COUNT(*) FROM {$wpdb->prefix}woocommerce_api_keys WHERE consumer_key = %s",
-                $hashed_key
-            )
-        ) > 0;
-    }
+		return $wpdb->get_row(
+			$wpdb->prepare(
+				'SELECT consumer_key, consumer_secret FROM ' . $wpdb->prefix . 'woocommerce_api_keys WHERE user_id = %d AND description LIKE %s ORDER BY key_id DESC LIMIT 1',
+				$user_id,
+				$like_condition
+			),
+			ARRAY_A
+		);
+	}
 
-    private function log_query_results($result)
-    {
-        if ($result === false) {
-            // Translators: %s is the error message returned from the database.
-            Helper::log_error(sprintf(__('Error executing query: %s', 'skydropx'), esc_html($wpdb->last_error)));
-        } else {
-            // Translators: %d is the number of rows affected by the query.
-            Helper::log_info(sprintf(__('Query executed successfully, rows affected: %d', 'skydropx'), $result));
-        }
-    }
+	/**
+	 * Clean webhooks linked to this plugin services.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	public function clean_webhooks() {
+		global $wpdb;
 
-    /**
-     * Clean webhooks linked to skydropx services.
-     */
-    public function skydropx_clean_webhooks()
-    {
-        global $wpdb;
+		$like_condition = '%' . $wpdb->esc_like( 'https://ecommerce.pro.skydropx.com' ) . '%';
 
-        // Define the table name safely without interpolation inside the prepare call
-        $table_name = $wpdb->prefix . 'wc_webhooks';
+		$result = $wpdb->query(
+			$wpdb->prepare(
+				'DELETE FROM ' . $wpdb->prefix . 'wc_webhooks WHERE status = %s AND delivery_url LIKE %s',
+				'active',
+				$like_condition
+			)
+		);
 
-        // Sanitize and escape the condition
-        $like_condition = '%' . $wpdb->esc_like('SKYDROPX') . '%';
+		$this->log_query_results( $result );
+	}
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-        $result = $wpdb->query(
-            $wpdb->prepare(
-                "DELETE FROM {$table_name} WHERE status = %s AND delivery_url LIKE %s",
-                'active',
-                $like_condition
-            )
-        );
+	/**
+	 * Delete API keys created by this plugin.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	public function delete_api_keys() {
+		try {
+			global $wpdb;
 
-        $this->log_query_results($result);
-    }
+			$like_condition = '%' . $wpdb->esc_like( 'Skydropx' ) . '%';
 
-    /**
-     * Delete Skydropx API keys 
-     */
-    public function delete_api_keys()
-    {
-        try {
-            global $wpdb;
+			$result = $wpdb->query(
+				$wpdb->prepare(
+					'DELETE FROM ' . $wpdb->prefix . 'woocommerce_api_keys WHERE description LIKE %s AND permissions = %s',
+					$like_condition,
+					'read_write'
+				)
+			);
 
-            // Define and sanitize table name safely
-            $table_name = esc_sql($wpdb->prefix . 'woocommerce_api_keys');
-            $like_condition = '%' . $wpdb->esc_like('skydropx') . '%';
+			$this->log_query_results( $result );
+		} catch ( \Throwable $th ) {
+			Helper::log_error(
+				sprintf(
+					// Translators: %s is the error message encountered during API key deletion.
+					__( 'Exception occurred deleting API keys: %s', 'skydropx' ),
+					esc_html( $th->getMessage() )
+				)
+			);
+		}
+	}
 
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-            $result = $wpdb->query(
-                $wpdb->prepare(
-                    "DELETE FROM {$table_name} WHERE description LIKE %s AND permissions = %s",
-                    $like_condition,
-                    'read_write'
-                )
-            );
+	/**
+	 * Reset API keys by deleting existing ones and creating new ones.
+	 *
+	 * @since 1.0.0
+	 * @return array|\WP_Error New [consumer_key, consumer_secret] or WP_Error on failure.
+	 */
+	public function reset_api_keys() {
+		$this->delete_api_keys();
+		return $this->create_wc_api_keys();
+	}
 
-            $this->log_query_results($result);
-        } catch (\Throwable $th) {
-            Helper::log_error(sprintf(
-                // Translators: %s is the error message encountered during API key deletion.
-                __('Exception occurred deleting API keys: %s', 'skydropx'),
-                esc_html($th->getMessage())
-            ));
-        }
-    }
+	/**
+	 * Create WooCommerce API keys for the current user.
+	 *
+	 * @since 1.0.0
+	 * @return array|\WP_Error Array [consumer_key, consumer_secret] or WP_Error on failure.
+	 */
+	private function create_wc_api_keys() {
+		global $wpdb;
 
-    public function reset_api_keys()
-    {
-        $this->delete_api_keys();
-        return $this->create_wc_api_keys();
-    }
+		$user = wp_get_current_user();
+		if ( ! $user || empty( $user->ID ) ) {
+			return new \WP_Error( 'invalid_user', __( 'Invalid user', 'skydropx' ) );
+		}
+
+		// Generate API keys.
+		$consumer_key    = 'ck_' . wc_rand_hash();
+		$consumer_secret = 'cs_' . wc_rand_hash();
+		$hashed_key      = wc_api_hash( $consumer_key );
+
+		$data = array(
+			'user_id'         => $user->ID,
+			'description'     => 'Skydropx',
+			'permissions'     => 'read_write',
+			'consumer_key'    => $hashed_key,
+			'consumer_secret' => $consumer_secret,
+			'truncated_key'   => substr( $consumer_key, -7 ),
+		);
+
+		$result = $wpdb->insert( $wpdb->prefix . 'woocommerce_api_keys', $data, array( '%d', '%s', '%s', '%s', '%s', '%s' ) );
+		if ( false === $result ) {
+			return new \WP_Error( 'db_insert_error', __( 'Could not create the API key.', 'skydropx' ) );
+		}
+
+		return array( $consumer_key, $consumer_secret );
+	}
+
+	/**
+	 * Log query execution results for diagnostics.
+	 *
+	 * @since 1.0.0
+	 * @param mixed $result Query execution result.
+	 * @return void
+	 */
+	private function log_query_results( $result ) {
+		global $wpdb;
+		if ( false === $result ) {
+			// Translators: %s is the last database error message.
+			Helper::log_error( sprintf( __( 'Error executing query: %s', 'skydropx' ), esc_html( $wpdb->last_error ) ) );
+		} else {
+			// Translators: %d is the number of affected rows after a database query.
+			Helper::log_info( sprintf( __( 'Query executed successfully, rows affected: %d', 'skydropx' ), (int) $result ) );
+		}
+	}
 }

@@ -1,36 +1,28 @@
 <?php
+/**
+ * Internationalization class for the plugin.
+ *
+ * @package   Skydropx\Includes
+ * @since     1.0.0
+ */
+
 namespace Skydropx\Includes;
 
-defined('ABSPATH') || exit;
-/**
- * Define the internationalization functionality
- *
- * Loads and defines the internationalization files for this plugin
- * so that it is ready for translation.
- *
- * @link       https://skydropx.com
- * @since      1.0.0
- *
- * @package    Skydropx
- * @subpackage Skydropx/includes
- */
+defined( 'ABSPATH' ) || exit;
 
 /**
- * Define the internationalization functionality.
+ * Internationalization class for the plugin.
  *
- * Loads and defines the internationalization files for this plugin
- * so that it is ready for translation.
- *
- * @since      1.0.0
- * @package    Skydropx
- * @subpackage Skydropx/includes
- * @author     Skydropx <hola@skydropx.com>
+ * @package   Skydropx\Includes
+ * @since     1.0.0
  */
 class Skydropx_i18n {
+
 	/**
 	 * Load the plugin text domain for translation.
 	 *
-	 * @since    1.0.0
+	 * @since 1.0.0
+	 * @return void
 	 */
 	public function load_plugin_textdomain() {
 
@@ -39,9 +31,5 @@ class Skydropx_i18n {
 			false,
 			dirname( dirname( plugin_basename( __FILE__ ) ) ) . '/languages/'
 		);
-
 	}
-
-
-
 }

@@ -1,26 +1,44 @@
 <?php
+/**
+ * API facade for plugin external services.
+ *
+ * @package   Skydropx
+ * @since     1.0.0
+ */
+
 namespace Skydropx\Api;
 
 if ( ! defined( 'ABSPATH' ) ) {
-    exit; // Exit if accessed directly
+	exit;
 }
 
 /**
- * Class Skydropx API
- *
- * @package  Skydropx\Api
+ * Concrete HTTP client for the plugin's external API.
  */
-class Skydropx_Api extends Skydropx_api_connector implements Skydropx_api_interface {
-	const APPLICATION_JSON = 'application/json';
+class Skydropx_Api extends Skydropx_api_connector {
 
 	/**
-	 * Get Base API Url
+	 * Perform a POST with default headers applied.
 	 *
-	 * @return string
+	 * @param string $endpoint Relative endpoint.
+	 * @param array  $body     Payload.
+	 * @return array Response array with 'code', 'body', 'json'.
 	 */
-	public function get_base_url() {
-		if ( defined( 'SKYDROPX_ECOMMERCE_URL' ) ) {
-			return SKYDROPX_ECOMMERCE_URL . '/api';
-		}
+	public function post( string $endpoint, array $body = array() ) {
+		return $this->exec( 'POST', $endpoint, $body );
+	}
+
+	/**
+	 * Perform a POST request using an explicit base URL.
+	 *
+	 * Useful for quotation destination overrides without affecting other
+	 * API calls that rely on the default base URL.
+	 *
+	 * @param string $absolute_url Absolute destination URL.
+	 * @param array  $body         Payload.
+	 * @return array Response array with 'code', 'body', 'json'.
+	 */
+	public function post_absolute_url( string $absolute_url, array $body = array() ) {
+		return $this->exec_with_absolute_url( 'POST', $absolute_url, $body );
 	}
 }

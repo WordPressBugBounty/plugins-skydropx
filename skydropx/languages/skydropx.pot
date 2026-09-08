@@ -1,0 +1,30 @@
+# Copyright (C) 2024 Skydropx
+# This file is distributed under the same license as the Skydropx plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: Skydropx\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-Basepath: ..\n"
+"X-Poedit-KeywordsList: __;_e;_ex:1,2c;_n:1,2;_nx:1,2,4c;_n_noop:1,2;_nx_noop:1,2,3c;esc_attr__;esc_html__;esc_attr_e;esc_html_e;esc_attr_x:1,2c;esc_html_x:1,2c\n"
+"X-Poedit-SearchPath-0: .\n"
+"X-Poedit-SearchPathExcluded-0: *.min.js\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. Plugin Name of the plugin/theme
+msgid "Skydropx"
+msgstr ""
+
+#. Description of the plugin/theme
+msgid "Despreocúpate de toda la logística de envíos de tu negocio con una sola herramienta. Cotiza entre más de 30 paqueterías y comienza a enviar desde México y Colombia, hoy."
+msgstr ""
+
+#. Author of the plugin/theme
+msgid "Skydropx"
+msgstr ""
+
+#. Author URI of the plugin/theme
+msgid "https://pro.skydropx.com"
+msgstr ""

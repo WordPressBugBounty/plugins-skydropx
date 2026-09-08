@@ -1,70 +1,74 @@
 <?php
-
-defined('ABSPATH') || exit;
-// LINK: https://core.trac.wordpress.org/ticket/52506
-// Review to solve issue with WordPress.DB.PreparedSQL.InterpolatedNotPrepared	Warning
 /**
- * Fired during plugin deactivation
+ * Fired during plugin deactivation.
  *
- * @link       https://skydropx.com
- * @since      1.0.0
+ * Defines code necessary to run on plugin deactivation: remote uninstall
+ * request, local cleanup, and logging.
  *
- * @package    Skydropx
+ * @package   Skydropx
  * @subpackage Skydropx/includes
+ * @since     1.0.0
  */
+
+defined( 'ABSPATH' ) || exit;
+
 
 use Skydropx\Helper\Helper;
 use Skydropx\Includes\Skydropx_Service;
 
-/**
- * Fired during plugin deactivation.
- *
- * This class defines all code necessary to run during the plugin's deactivation.
- *
- * @since      1.0.0
- * @package    Skydropx
- * @subpackage Skydropx/includes
- * @author     Skydropx <hola@skydropx.com>
- */
-class Skydropx_Deactivator
-{
-	private $skydropx_service;
 
-	public function __construct(Skydropx_Service $skydropx_service) {
-		$this->skydropx_service = $skydropx_service;
-	}
-	
+/**
+ * Deactivation handler class.
+ */
+class Skydropx_Deactivator {
+
 	/**
-	 * Deactivate the plugin.
+	 * Domain service used to remove remote data and clean local state.
+	 *
+	 * @var Skydropx_Service
+	 */
+	private $service;
+
+	/**
+	 * Inject dependencies.
 	 *
 	 * @since 1.0.0
+	 * @param Skydropx_Service $service Service instance.
 	 */
-	public function deactivate()
-	{
+	public function __construct( Skydropx_Service $service ) {
+		$this->service = $service;
+	}
+
+	/**
+	 * Deactivate the plugin and clean remote/local state.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	public function deactivate() {
 		try {
 			Helper::log_info(
 				// Translators: Deactivating plugin...
-				__('Desactivando plugin...', 'skydropx')
+				__( 'Desactivando plugin...', 'skydropx' )
 			);
 
-			// $res = self::remove_from_ecommerce_service();
-			$res = $this->skydropx_service->remove_from_ecommerce_service();
+			// Send uninstall request to external service to clean remote state.
+			$res = $this->service->remove_from_ecommerce_service();
 
-			if ($res && !isset($res['errors'])) {
-				$this->skydropx_service->remove_skydropx_from_site();
+			if ( $res && ! isset( $res['errors'] ) ) {
+				$this->service->remove_plugin_from_site();
 				Helper::log_info(
 					// Translators: Plugin deactivated successfully.
-					__('Plugin desactivado correctamente.', 'skydropx')
+					__( 'Plugin desactivado correctamente.', 'skydropx' )
 				);
 			} else {
 				// Translators: %s is the response indicating that WooCommerce uninstallation failed.
-				Helper::log_error(sprintf(__('WC uninstallation failed... %s', 'skydropx'), wp_json_encode($res, JSON_PRETTY_PRINT)));
+				Helper::log_error( sprintf( __( 'WC uninstallation failed... %s', 'skydropx' ), wp_json_encode( $res, JSON_PRETTY_PRINT ) ) );
 			}
-		} catch (\Throwable $th) {
-			$message = esc_html($th->getMessage());
+		} catch ( \Throwable $th ) {
+			$message = esc_html( $th->getMessage() );
 			// Translators: %s is the error message encountered during plugin deactivation.
-			Helper::log_error(sprintf(__('Error deactivating plugin: %s', 'skydropx'), $message));
+			Helper::log_error( sprintf( __( 'Error deactivating plugin: %s', 'skydropx' ), $message ) );
 		}
 	}
-
 }

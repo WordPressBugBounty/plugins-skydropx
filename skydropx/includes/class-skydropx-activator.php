@@ -1,108 +1,133 @@
 <?php
-
-defined('ABSPATH') || exit;
-
 /**
- * Fired during plugin activation
+ * Plugin activator file.
  *
- * @link       https://skydropx.com
- * @since      1.0.0
+ * Handles plugin activation logic including environment validation
+ * and system requirements verification.
  *
- * @package    Skydropx
+ * @package   Skydropx
  * @subpackage Skydropx/includes
+ * @since     1.0.0
  */
 
-use Skydropx\Admin\Skydropx_Admin_Notices;
+defined( 'ABSPATH' ) || exit;
+
 use Skydropx\Helper\Helper;
 
 /**
  * Fired during plugin activation.
  *
- * This class defines all code necessary to run during the plugin's activation.
+ * This class defines all code necessary to run during the plugin's activation,
+ * including system requirements validation and initial setup.
  *
  * @since      1.0.0
  * @package    Skydropx
  * @subpackage Skydropx/includes
  * @author     Skydropx <hola@skydropx.com>
  */
+class Skydropx_Activator {
 
-class Skydropx_Activator
-{
-	public function activate()
-	{
+	/**
+	 * Activate the plugin.
+	 *
+	 * Performs system requirements validation and handles activation process.
+	 *
+	 * @link https://developer.wordpress.org/plugins/plugin-basics/activation-deactivation-hooks/
+	 * @link https://developer.wordpress.org/reference/functions/register_activation_hook/
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	public function activate() {
 		try {
-			Helper::log_info('Starting plugin activation ' . SKYDROPX_PLUGIN_BASE);
+			$this->check_system_requirements();
+			$this->set_permalink_structure();
 
-			if (!get_option('permalink_structure')) {
-				Helper::log_error(
-					// translators: %s refers to the permalink redirect URL.
-					__('Plugin activation incomplete. Permalink structure needs to be updated.', 'skydropx')
-				);
-
-				$this->set_permalink();
-				return false;
-			}
-	
-			$this->notify_user_activation_success();
-			return true;
-		} catch (\Throwable $th) {
-			$message = esc_html($th->getMessage());
-
+			Helper::log_info( 'Plugin activated successfully: ' . SKYDROPX_PLUGIN_BASE );
+		} catch ( \Throwable $th ) {
+			$message = esc_html( $th->getMessage() );
 			// translators: %s refers to the error message during plugin activation.
-			Helper::log_error(sprintf(__('Error activating plugin: %s', 'skydropx'), $message));
+			Helper::log_error( sprintf( __( 'Error activating plugin: %s', 'skydropx' ), $message ) );
 
-			return false;
+			// Re-throw to prevent activation
+			throw $th;
 		}
 	}
 
 	/**
-	 * Set the permalink structure to /%postname%/ if it is not configured.
-	 * This is necessary for the plugin to work correctly. As it allows us to consume the API.
+	 * Set WordPress permalink structure for the current site to "/%postname%/" and flush rewrite rules.
+	 *
+	 * References:
+	 * - Permalinks are global URLs that impact site content addressing:
+	 *
+	 *   @link https://wordpress.org/documentation/article/customize-permalinks/
+	 * - Flushing rewrite rules rebuilds rewrite rules and is an expensive operation:
+	 *   @link https://developer.wordpress.org/reference/functions/flush_rewrite_rules/
+	 *
+	 * @since 1.0.0
+	 * @return void
 	 */
-	private function set_permalink()
-	{
+	private function set_permalink_structure() {
+		$current = get_option( 'permalink_structure', '' );
 
-		if (!get_option('permalink_structure')) {
-			// Note:  Appears that to use wc-api we need to visit the permalink 
-			// settings page in order to enable api calls
-			// However, this is not the case for the new v3 endpoints
-
-			global $wp_rewrite; 
-			//Write the rule
-			$wp_rewrite->set_permalink_structure('/%postname%/'); 
-
-			//Set the option
-			update_option( "rewrite_rules", FALSE ); 
-			update_option( "skydropx_visited_permalink_view", false);
-
-			//Flush the rules and tell it to write htaccess
-			$wp_rewrite->flush_rules( true );
-			return admin_url('options-permalink.php');
+		// Accept both, canonical and missing trailing slash variants.
+		if ( '/%postname%/' === $current || '/%postname%' === $current ) {
+			return;
 		}
-		return null;
+
+		// Store previous value for debugging -> rollback purposes.
+		update_option( 'skydropx_previous_permalink_structure', $current );
+		update_option( 'permalink_structure', '/%postname%/' );
+
+		// Mark one time admin notice for the next admin request.
+		update_option( 'skydropx_permalinks_auto_updated', 1 );
+		flush_rewrite_rules();
 	}
 
-    private function notify_user_activation_success() {
-		$setup_url = admin_url('admin.php?page=skydropx');
-       
-		Skydropx_Admin_Notices::add_warning(
-			'missing_shop_id',
-			sprintf(
-				'<strong>%s</strong> %s <a href="%s">%s</a>',
-				// translators: Plugin name.
-				__('Skydropx Plugin:', 'skydropx'),
-				// translators: Success message after activating the plugin.
-				__('Activado con éxito. Por favor, termina de vincular tu tienda con Skydropx en la', 'skydropx'),
-				esc_url($setup_url),
-				// translators: Link text.
-                __('página de configuración.', 'skydropx')
-			)
-		);
+	/**
+	 * Verifies minimum system requirements.
+	 *
+	 * Checks the running versions of PHP, WordPress, and WooCommerce. If a requirement
+	 * is not met, the plugin is deactivated and execution stops with an admin message.
+	 *
+	 * @since 1.0.0
+	 * @global string $wp_version WordPress version.
+	 * @return void
+	 * @throws \Exception When system requirements are not met.
+	 */
+	private function check_system_requirements() {
+		global $wp_version;
 
-		Helper::log_info(
-			// translators: message after activating the plugin.
-			__('Plugin activated successfully.', 'skydropx')
-		);
-    }
+		// Perform version checks.
+		if ( version_compare( PHP_VERSION, '7.0', '<' ) ) {
+			$flag     = 'PHP';
+			$required = '7.0';
+			$current  = PHP_VERSION;
+		} elseif ( version_compare( $wp_version, '5.4', '<' ) ) {
+			$flag     = 'WordPress';
+			$required = '5.4';
+			$current  = $wp_version;
+		} elseif ( ! defined( 'WC_VERSION' ) || version_compare( WC_VERSION, '4.3', '<' ) ) {
+			$flag     = 'WooCommerce';
+			$required = '4.3';
+			$current  = defined( 'WC_VERSION' ) ? WC_VERSION : 'N/A';
+		}
 
+		// Handle failure if requirements are not met.
+		if ( isset( $flag ) ) {
+			deactivate_plugins( SKYDROPX_PLUGIN_BASE );
+			wp_die(
+				sprintf(
+					// Translators: %1$s is the plugin name, %2$s is the component name, %3$s is the required version, %4$s is the current version.
+					esc_html__( '%1$s requires at least %2$s version %3$s. Current version: %4$s.', 'skydropx' ),
+					'Skydropx',
+					esc_html( $flag ),
+					esc_html( $required ),
+					esc_html( $current )
+				),
+				esc_html__( 'Plugin Activation Error', 'skydropx' ),
+				array( 'back_link' => true )
+			);
+		}
+	}
 }

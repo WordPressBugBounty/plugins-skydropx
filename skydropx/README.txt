@@ -3,8 +3,8 @@ Contributors: Skydropx
 Donate link: https://skydropx.com
 Tags: WooCommerce, Shipping Method, Skydropx
 Requires at least: 3.0.1
-Tested up to: 6.9
-Stable tag: 1.1.3
+Tested up to: 7.1
+Stable tag: 2.1.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -87,7 +87,18 @@ Se recomienda revisar estas notificaciones y el apartado del menú Skydropx para
 3. Visualización de las tarifas dinámicas generadas en tiempo real para el carrito de compras.
 
 == Changelog ==
-== 1.1.3 =
+= 2.1.3 =
+* New version connected to the Skydropx Pro platform: link your store and manage your shipments from the new experience.
+* Simpler installation: the plugin now configures the permalinks by itself when you activate it, so you no longer have to set them manually before connecting your store.
+* Faster quotation in the cart: rates are reused while the customer does not change the cart or the shipping address, so the checkout no longer waits for a new request on every step.
+* The shipping option name shown to your customers can now be edited from the WooCommerce shipping settings.
+* More reliable quotation: the rates your store receives are updated automatically from Skydropx, without having to reinstall or reconfigure the plugin.
+* Safer connection: requests coming from Skydropx are validated with your WooCommerce credentials.
+* Clearer notices in the administration panel: they can be dismissed and disappear on their own once the pending setting is fixed.
+* The Skydropx menu now shows the real connection status of your store.
+* Several fixes and internal improvements for a more stable operation.
+
+= 1.1.3 =
 * Modify endpoints paths and add security layer by required Basic authenticacion.
 * Increase tested support for wordpress v6.7
 * Mark as legacy public endpoints

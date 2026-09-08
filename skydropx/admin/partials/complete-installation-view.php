@@ -1,101 +1,73 @@
 <?php
-
-if (!defined('ABSPATH')) {
-    exit; // Exit if accessed directly.
-}
-
 /**
- * Get the attachment ID by its slug.
+ * Complete installation view.
  *
- * @param string $slug The slug of the attachment.
- * @return int|null The attachment ID or null if not found.
+ * @package   Skydropx
+ * @subpackage Skydropx/admin
+ * @since     1.0.0
  */
-function get_attachment_id_by_slug($slug) {
-    $args = [
-        'post_type'   => 'attachment',
-        'name'        => sanitize_title($slug),
-        'post_status' => 'inherit',
-        'numberposts' => 1,
-    ];
 
-    $attachments = get_posts($args);
-
-    if (!empty($attachments)) {
-        return $attachments[0]->ID;
-    }
-
-    return null;
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
 }
-
-// Get the image IDs for registered images
-$logo_image_id = get_attachment_id_by_slug('skydropx-logo.png');
-$plugin_image_id = get_attachment_id_by_slug('skydropx-success.png');
+$logo_url    = \Skydropx\Helper\Helper::asset_url( 'assets/images/skydropx-logo.png' );
+$success_url = \Skydropx\Helper\Helper::asset_url( 'assets/images/skydropx-success.png' );
 ?>
 
 <div class="center-div">
-    <div class="skydropx-content">
-        <div class="skydropx-logo-container">
-            <?php 
-            if ($logo_image_id) {
-                echo wp_get_attachment_image($logo_image_id, 'full', false, [
-                    // translators: Alt text for the Skydropx logo.
-                    'alt' => esc_attr__('Skydropx logo', 'skydropx'),
-                ]);
-            } else {
-                // translators: Fallback message when the Skydropx logo is not found.
-                echo '<p>' . esc_html__('Logo not found.', 'skydropx') . '</p>';
-            }
-            ?>
-        </div>
-        <div class="skydropx-description-container">
-            <p class="skydropx-description">
-                <?php 
-                // translators: Success message after plugin activation.
-                esc_html_e('¡Activación completada exitosamente!', 'skydropx'); 
-                ?>
-            </p>
-            <p class="skydropx-description-sub-content">
-                <?php 
-                // translators: Message to guide the user to integrate their store with Skydropx.
-                esc_html_e('Para acceder a todas las funcionalidades, vincule su tienda con nuestra plataforma Skydropx.', 'skydropx'); 
-                ?>
-            </p>
-            <?php if (!$is_first_time) : ?>
-                <p class="skydropx-description-sub-content">
-                    <?php 
-                    // translators: Message advising the user to deactivate/reactivate the plugin or contact support.
-                    esc_html_e('Si ya vinculaste tu tienda en Skydropx y no aparece en el plugin, porfavor, desactiva y activa nuevamente el plugin o contacta a soporte.', 'skydropx'); 
-                    ?>
-                </p>
-            <?php endif; ?>
-        </div>
-        <?php if (!empty($button_link) && !empty($button_text)) : ?>
-            <a class="skydropx-btn" href="<?php echo esc_url($button_link); ?>">
-                <?php 
-                // translators: Text for the integration action button.
-                echo esc_html($button_text); 
-                ?>
-            </a>
-        <?php else : ?>
-            <p class="skydropx-no-action">
-                <?php 
-                // translators: Message displayed when no actions are available.
-                esc_html_e('No hay acciones disponibles en este momento.', 'skydropx'); 
-                ?>
-            </p>
-        <?php endif; ?>
-        <div class="skydropx-image-container">
-            <?php 
-            if ($plugin_image_id) {
-                echo wp_get_attachment_image($plugin_image_id, 'full', false, [
-                    // translators: Alt text for the Skydropx plugin image.
-                    'alt' => esc_attr__('Skydropx plugin image', 'skydropx'),
-                ]);
-            } else {
-                // translators: Fallback message when the Skydropx plugin image is not found.
-                echo '<p>' . esc_html__('Plugin image not found.', 'skydropx') . '</p>';
-            }
-            ?>
-        </div>
-    </div>
+	<div class="skydropx-content">
+		<div class="skydropx-logo-container">
+			<img src="<?php echo esc_url( $logo_url ); ?>" alt="<?php echo esc_attr__( 'Skydropx logo', 'skydropx' ); ?>" decoding="async" />
+		</div>
+		<div class="skydropx-description-container">
+			<h2 class="skydropx-title">
+				<?php
+				// translators: Title message after plugin activation.
+				esc_html_e( 'Activación completada, solo queda un paso', 'skydropx' );
+				?>
+			</h2>
+			<p class="skydropx-description-sub-content">
+				<?php
+				// translators: Message guiding the user to link their store to use the integration.
+				esc_html_e( 'Para disfrutar de los beneficios de esta integración, vincula tu tienda.', 'skydropx' );
+				?>
+			</p>
+			<p class="skydropx-description-sub-content">
+				<?php
+				// translators: Message advising the user to try again if the store is not visible yet.
+				esc_html_e( 'Si ya lo hiciste y aún no puedes verla, vuelve a intentarlo.', 'skydropx' );
+				?>
+			</p>
+		</div>
+		<?php if ( ! empty( $button_link ) && ! empty( $button_text ) ) : ?>
+			<a class="skydropx-btn" href="<?php echo esc_url( $button_link ); ?>" target="_blank" rel="noopener noreferrer" aria-label="<?php echo esc_attr( $button_text ); ?>">
+				<?php
+				// translators: Text for the integration action button.
+				echo esc_html( $button_text );
+				?>
+			</a>
+			<?php if ( ! empty( $redirect_destination ) ) : ?>
+				<script>
+					(function () {
+						try {
+							const link = document.querySelector('.skydropx-btn');
+							if (!link) { return; }
+							const handler = function () {
+								const destination = '<?php echo esc_js( esc_url( $redirect_destination ) ); ?>';
+								if (destination) {
+									setTimeout(function () {
+										window.location.href = destination;
+									}, 3000);
+								}
+							};
+							link.addEventListener('click', handler, { once: true });
+						} catch (e) {}
+					})();
+				</script>
+			<?php endif; ?>
+		<?php endif; ?>
+		<div class="skydropx-image-container" aria-hidden="true">
+			<img src="<?php echo esc_url( $success_url ); ?>" alt="" loading="lazy" decoding="async" />
+		</div>
+	</div>
 </div>
