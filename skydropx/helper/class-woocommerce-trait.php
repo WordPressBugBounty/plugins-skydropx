@@ -17,7 +17,8 @@ trait WooCommerce_Trait {
 	 * Get product dimensions and weight in standardized units.
 	 *
 	 * Returns height, width, length, weight, price, name, id, sku, and a
-	 * calculated volume metric (wc-product-size). Units used: cm/kg.
+	 * calculated volume metric (wc-product-size). Units used: cm/kg. The price
+	 * is the displayed unit price, so it follows the store tax display setting.
 	 *
 	 * @param int $product_id WooCommerce product ID.
 	 * @return array|false    Associative array with metrics or false when product is invalid.
@@ -41,7 +42,7 @@ trait WooCommerce_Trait {
 			'width'           => $width,
 			'length'          => $length,
 			'weight'          => $weight,
-			'price'           => $product->get_price(),
+			'price'           => wc_get_price_to_display( $product ),
 			'description'     => $product->get_name(),
 			'id'              => $product_id,
 			'sku'             => $product->get_sku(),
@@ -95,5 +96,31 @@ trait WooCommerce_Trait {
 			}
 		}
 		return $grouped_items;
+	}
+
+ 
+	/**
+	 * Total value of the cart contents as the customer sees it.
+	 *
+	 * Mirrors the cart subtotal line: coupons already applied, shipping and
+	 * fees excluded, taxes included only when the store displays prices with
+	 * taxes. Conditional rates are configured against that same figure, so any
+	 * other reading would make a "free shipping over X" rule fire at the wrong
+	 * threshold.
+	 *
+	 * @param \WC_Cart $cart Current WooCommerce cart instance.
+	 * @return float         Cart contents total, 0.0 when the cart is unavailable.
+	 */
+	public static function get_cart_total( $cart ) {
+		if ( ! $cart instanceof \WC_Cart ) {
+			return 0.0;
+		}
+
+		$total = (float) $cart->get_cart_contents_total();
+		if ( $cart->display_prices_including_tax() ) {
+			$total += (float) $cart->get_cart_contents_tax();
+		}
+
+		return round( $total, wc_get_price_decimals() );
 	}
 }

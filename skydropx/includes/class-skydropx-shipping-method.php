@@ -238,6 +238,7 @@ class Skydropx_Shipping_Method extends \WC_Shipping_Method {
 		$body['address_from'] = $address_from;
 		$body['address_to']   = $address_to;
 		$body['items']        = $items;
+		$body['total_price']  = Helper::get_cart_total( WC()->cart );
 
 		return $body;
 	}
@@ -317,6 +318,7 @@ class Skydropx_Shipping_Method extends \WC_Shipping_Method {
 			$item_to_quote['height']   = (float) $item['height'];
 			$item_to_quote['width']    = (float) $item['width'];
 			$item_to_quote['length']   = (float) $item['length'];
+			$item_to_quote['price']    = isset( $item['price'] ) ? (float) $item['price'] : 0.0;
 			$items[]                   = $item_to_quote;
 		}
 
@@ -413,8 +415,28 @@ class Skydropx_Shipping_Method extends \WC_Shipping_Method {
 	 * @return string MD5 hash over a normalized payload.
 	 */
 	private function compute_quote_fingerprint( array $package ) {
-		$items = $this->build_items_from_cart();
-		$dest  = array(
+		$items          = $this->build_items_from_cart();
+		$id_to_quantity = array();
+
+		foreach ( $items as $item ) {
+			if ( isset( $item['id'] ) ) {
+				$id                    = (string) $item['id'];
+				$qty                   = isset( $item['quantity'] ) ? (float) $item['quantity'] : 0.0;
+				$id_to_quantity[ $id ] = ( isset( $id_to_quantity[ $id ] ) ? (float) $id_to_quantity[ $id ] : 0.0 ) + $qty;
+			}
+		}
+
+		ksort( $id_to_quantity, SORT_STRING );
+		$normalized_items = array();
+
+		foreach ( $id_to_quantity as $pid => $qty ) {
+			$normalized_items[] = array(
+				'id'  => $pid,
+				'qty' => (float) $qty,
+			);
+		}
+
+		$dest = array(
 			'postcode' => isset( $package['destination']['postcode'] ) ? (string) $package['destination']['postcode'] : '',
 			'country'  => isset( $package['destination']['country'] ) ? (string) $package['destination']['country'] : '',
 			'state'    => isset( $package['destination']['state'] ) ? (string) $package['destination']['state'] : '',
@@ -422,9 +444,11 @@ class Skydropx_Shipping_Method extends \WC_Shipping_Method {
 		);
 
 		$payload = array(
-			'items' => $items,
+			'items' => $normalized_items,
 			'to'    => $dest,
+			'total' => Helper::get_cart_total( WC()->cart ),
 		);
+
 		return md5( wp_json_encode( $payload ) );
 	}
 

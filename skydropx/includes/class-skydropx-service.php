@@ -67,7 +67,6 @@ class Skydropx_Service {
 				'client_secret' => $consumer_secret,
 				'domain'        => $domain,
 				'scope'         => 'read_write',
-				'version'       => SKYDROPX_VERSION,
 			),
 			$ecommerce_url . '/install/woocommerce'
 		);

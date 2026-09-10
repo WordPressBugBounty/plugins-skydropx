@@ -4,7 +4,7 @@ Donate link: https://skydropx.com
 Tags: WooCommerce, Shipping Method, Skydropx
 Requires at least: 3.0.1
 Tested up to: 7.1
-Stable tag: 2.1.3
+Stable tag: 2.1.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -87,6 +87,12 @@ Se recomienda revisar estas notificaciones y el apartado del menú Skydropx para
 3. Visualización de las tarifas dinámicas generadas en tiempo real para el carrito de compras.
 
 == Changelog ==
+= 2.1.4 =
+* Shipping rates conditioned by the value of the purchase now work: your store sends the cart total to Skydropx, so rules such as "free shipping over $999" are applied when the customer reaches that amount.
+* The total that is sent is the one your customer sees in the cart: it already includes the discounts of the coupons applied, and it includes taxes only when your store displays prices with taxes.
+* The value of each product is also sent with the same criteria, so the quotation matches the prices shown in your store.
+* If the total of the cart changes (for example, when a coupon is applied or removed), the rates are quoted again instead of keeping the previous ones.
+
 = 2.1.3 =
 * New version connected to the Skydropx Pro platform: link your store and manage your shipments from the new experience.
 * Simpler installation: the plugin now configures the permalinks by itself when you activate it, so you no longer have to set them manually before connecting your store.

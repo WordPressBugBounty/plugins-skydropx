@@ -16,6 +16,8 @@ defined( 'ABSPATH' ) || exit;
 
 use Skydropx\Admin\Skydropx_Admin;
 use Skydropx\Admin\Skydropx_Admin_Notices;
+use Skydropx\Admin\Skydropx_Order_Label_Service;
+use Skydropx\Admin\Skydropx_Order_Label_UI;
 use Skydropx\Api\Skydropx_Api;
 use Skydropx\Helper\Helper;
 use Skydropx\Includes\Skydropx_i18n;
@@ -284,6 +286,21 @@ class Skydropx {
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'admin_menu' );
 		$this->loader->add_action( 'admin_notices', Skydropx_Admin_Notices::class, 'output_notices' );
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'validate_necessary_settings' );
+
+		$order_label_service = new Skydropx_Order_Label_Service();
+		$order_label_ui      = new Skydropx_Order_Label_UI( $order_label_service );
+
+		// Order label metabox
+		$this->loader->add_action( 'admin_enqueue_scripts', $order_label_ui, 'enqueue_admin_assets' );
+		$this->loader->add_action( 'add_meta_boxes', $order_label_ui, 'register_order_label_metabox', 10, 2 );
+		$this->loader->add_filter( 'woocommerce_admin_order_actions', $order_label_ui, 'add_orders_list_action', 10, 2 );
+		$this->loader->add_action( 'admin_post_skydropx_print_label', $order_label_ui, 'handle_print_label' );
+
+		// Orders list column
+		$this->loader->add_filter( 'manage_woocommerce_page_wc-orders_columns', $order_label_ui, 'add_hpos_orders_list_column' );
+		$this->loader->add_action( 'manage_woocommerce_page_wc-orders_custom_column', $order_label_ui, 'render_hpos_orders_list_column', 10, 2 );
+		$this->loader->add_filter( 'manage_edit-shop_order_columns', $order_label_ui, 'add_legacy_orders_list_column' );
+		$this->loader->add_action( 'manage_shop_order_posts_custom_column', $order_label_ui, 'render_legacy_orders_list_column', 10, 2 );
 	}
 
 	/**

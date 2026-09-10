@@ -16,7 +16,7 @@
  * Requires Plugins:  woocommerce
  * Plugin URI:        https://pro.skydropx.com/es-MX/merchant_stores
  * Description:       Despreocúpate de toda la logística de envíos de tu negocio con una sola herramienta. Cotiza entre más de 30 paqueterías y comienza a enviar desde México y Colombia, hoy.
- * Version:           2.1.3
+ * Version:           2.1.4
  * Requires at least: 5.4
  * Requires PHP:      7.0
  * Author:            Skydropx
@@ -39,7 +39,7 @@ if ( ! defined( 'WPINC' ) ) {
 defined( 'ABSPATH' ) || exit;
 
 // Define plugin constants.
-define( 'SKYDROPX_VERSION', '2.1.3' );
+define( 'SKYDROPX_VERSION', '2.1.4' );
 define( 'SKYDROPX_ECOMMERCE_URL', 'https://ecommerce.pro.skydropx.com' );
 define( 'SKYDROPX_APP_URL', 'https://pro.skydropx.com' );
 define( 'SKYDROPX_SHIPPING_METHOD_ID', 'skydropx' );

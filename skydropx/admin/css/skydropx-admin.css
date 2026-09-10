@@ -122,3 +122,19 @@
 		max-width: 100%;
 	}
 }
+
+a.skydropx_print_label::after,
+.wc-action-button.skydropx_print_label::after,
+.order_actions a.skydropx_print_label::after,
+a.skydropx-print-label::after,
+.wc-action-button.skydropx-print-label::after,
+.order_actions a.skydropx-print-label::after {
+	font-family: dashicons;
+	content: "\f193"; /* dashicons-printer */
+}
+
+th.column-skydropx_label,
+td.column-skydropx_label {
+	width: 36px;
+	text-align: center;
+}
